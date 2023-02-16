@@ -10,6 +10,8 @@ variable "region" {
 
 variable "vpc_cidr_block" {}
 variable "destination_cidr_block" {}
+variable "vpc_cidr_block_prefix" {}
+variable "vpc_cidr_block_postfix" {}
 
 provider "aws" {
   region  = var.region
@@ -37,7 +39,7 @@ locals {
 resource "aws_subnet" "public_subnet" {
   count = length(local.az_slice)
 
-  cidr_block        = "10.0.${count.index + 1}.0/24"
+  cidr_block        = "${var.vpc_cidr_block_prefix}.${count.index + 1}.0/24"
   vpc_id            = aws_vpc.a3_vpc.id
   availability_zone = element(local.az_slice, count.index)
 
@@ -51,7 +53,7 @@ resource "aws_subnet" "public_subnet" {
 resource "aws_subnet" "private_subnet" {
   count = length(local.az_slice)
 
-  cidr_block        = "10.0.${count.index + 11}.0/24"
+  cidr_block        = "${var.vpc_cidr_block_prefix}.${count.index + 11}.0/24"
   vpc_id            = aws_vpc.a3_vpc.id
   availability_zone = element(local.az_slice, count.index)
 
