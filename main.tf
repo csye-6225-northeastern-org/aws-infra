@@ -30,7 +30,7 @@ data "aws_availability_zones" "available" {
 
 # Gets the top 3 availability zones
 locals {
-  az_slice = slice(data.aws_availability_zones.available.names, 0, 3)
+  az_slice = length(data.aws_availability_zones.available.names) > 2 ? slice(data.aws_availability_zones.available.names, 0, 3) : data.aws_availability_zones.available.names
 }
 
 # Creating public subnets
