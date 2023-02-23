@@ -27,7 +27,12 @@ The code creates the following AWS resources:
 - **aws_route_table_association.public_subnet_association**: Associates the public subnets with the public route table.
 - **aws_route_table.private_route_table**: Creates a private route table for the VPC.
 - **aws_route_table_association.private_subnet_association**: Associates the private subnets with the private route table.
+
 The code uses the locals block to get the top 3 available zones, if available.
+
+- **aws_security_group** : Creates a security group that allows incoming traffic on ports 22, 80, 443, and 3000, and restricts outgoing traffic to the specified CIDR block.
+- **aws_instance** : Creates a new EC2 instance using the specified AMI, instance type, key pair, subnet ID, and security group. The EC2 instance uses a general-purpose SSD (gp2) volume with a size of 50 GB as its root volume.he "key_pair" variable specifies the name of the SSH key pair that will be used to access the EC2 instance. The "ami_owner" variable specifies the AWS account ID of the AMI owner, and the "ami_pattern" variable specifies a search pattern for finding the appropriate AMI
+- **data** : This block defines a data source named "aws_ami" that retrieves the ID of the most recent Amazon Machine Image (AMI) that matches the specified search pattern and belongs to the specified account ID
 
 ## Usage
 To use the code, the following steps can be followed:
