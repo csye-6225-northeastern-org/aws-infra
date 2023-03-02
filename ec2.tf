@@ -118,49 +118,13 @@ resource "aws_instance" "ec2" {
   key_name      = var.key_pair
   subnet_id     = aws_subnet.public_subnet[0].id
 
-  user_data = <<EOT
+  user_data = <<EOF
 #!/bin/bash
-cat <<EOF > /etc/systemd/system/webapp.service
-[Unit]
-Description=Webapp Service
-After=network.target
-
-[Service]
-Environment="NODE_ENV=dev"
-Environment="PORT=3000"
-Environment="DIALECT=mysql"
-Environment="DB_HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
-Environment="DB_USERNAME=${aws_db_instance.rds_instance.username}"
-Environment="DB_PASSWORD=${aws_db_instance.rds_instance.password}"
-Environment="DB_NAME=${aws_db_instance.rds_instance.db_name}"
-Environment="S3_BUCKET_NAME=${aws_s3_bucket.webapp-s3.bucket}"
-Environment="AWS_REGION=${var.aws_region}"
-
-Type=simple
-User=ec2-user
-WorkingDirectory=/home/ec2-user/webapp
-ExecStart=/usr/bin/node server-listener.js
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target" > /etc/systemd/system/webapp.service
+export USERNAME=${var.db_username}
+export PASSWORD=${var.db_password}
+export HOST=${aws_db_instance.rds_instance.endpoint}
+# export S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.id}
 EOF
-
-sudo systemctl daemon-reload
-sudo systemctl start webapp.service
-sudo systemctl enable webapp.service
-
-echo 'export NODE_ENV=dev' >> /home/ec2-user/.bashrc,
-echo 'export PORT=3000' >> /home/ec2-user/.bashrc,
-echo 'export DIALECT=mysql' >> /home/ec2-user/.bashrc,
-echo 'export DB_HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}' >> /home/ec2-user/.bashrc,
-echo 'export DB_USERNAME=${aws_db_instance.rds_instance.username}' >> /home/ec2-user/.bashrc,
-echo 'export DB_PASSWORD=${aws_db_instance.rds_instance.password}' >> /home/ec2-user/.bashrc,
-echo 'export DB_NAME=${aws_db_instance.rds_instance.db_name}' >> /home/ec2-user/.bashrc,
-echo 'export S3_BUCKET_NAME=${aws_s3_bucket.webapp-s3.bucket}' >> /home/ec2-user/.bashrc,
-echo 'export AWS_REGION=${var.aws_region}' >> /home/ec2-user/.bashrc,
-source /home/ec2-user/.bashrc
-EOT
 
 
   vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
