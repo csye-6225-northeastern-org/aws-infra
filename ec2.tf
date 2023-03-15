@@ -27,16 +27,16 @@ variable "volume_size" {
 }
 
 variable "NODE_ENV" {
-  type = string
+  type    = string
   default = "development"
 }
 
-variable "PORT"{
+variable "PORT" {
   default = 3000
 }
 
 variable "DIALECT" {
-  type = string
+  type    = string
   default = "postgresql"
 }
 
