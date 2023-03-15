@@ -1,18 +1,14 @@
 variable "dev_hostedzone_id" {
-  type    = string
-  default = "Z007198424U4DQHRHINXP"
+  type = string
 }
 variable "prod_hostedzone_id" {
-  type    = string
-  default = "Z097914418ULQHGLVWJ7H"
+  type = string
 }
 variable "dev_A_record_name" {
-  type    = string
-  default = "dev.nithinbharadwaj.me"
+  type = string
 }
 variable "prod_A_record_name" {
-  type    = string
-  default = "prod.nithinbharadwaj.me"
+  type = string
 }
 resource "aws_eip" "eip" {
   instance = aws_instance.ec2.id
