@@ -1,3 +1,12 @@
+variable "db_username" {
+  type    = string
+  default = "csye6225"
+}
+
+variable "db_password" {
+  type    = string
+  default = "postgres"
+}
 
 # Create a DB security group
 resource "aws_security_group" "db_security_group" {
