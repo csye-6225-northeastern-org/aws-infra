@@ -10,6 +10,33 @@ The following variables are used in the code:
 - destination_cidr_block: Destination CIDR block.
 - vpc_cidr_block_prefix: Prefix for the VPC CIDR block.
 - vpc_cidr_block_postfix: Postfix for the VPC CIDR block.
+- ami_owner: To assign the owner for the created AMI
+  
+#### **Variables related to ec2.tf**
+
+ - ec2_class: To define the type of instance that needs to be used like t2.micro etc
+ - key_pair: SSH keypair used to connect the machine 
+ - ami_pattern: AMI that needs to be picked for spawning EC2 instance
+ - volume_type: Type of SSD volume that needs to be used
+ - volume_size: Size of the volume that needs to be used
+
+#### **Variables related to rds.tf**
+
+ - engine: The DB engine that application needs (can be postgres/Mysql etc)
+ - engine_version: Version of the DB engine that needs to be used
+ - instance_class: Type of instance that needs to used to create the RDS instance
+ - identifier: This name uniquely identifies the DB instance when interacting with the Amazon RDS API and AWS CLI commands 
+ - db_name: Database name that needs to be assigned 
+ - username: Username of the database that is created in RDS instance
+ - password: Password of the database that is created
+
+#### **Variables related to route53.tf**
+
+ - dev_hostedzone_id: Dev hosted zone Id. Can be seen in Route53 when logged in as Dev
+ - prod_hostedzone_id: prod hosted zone Id. Can be viewed in Route53 when logged in as demo/prod AWS account
+ - dev_A_record_name: Domain name associated with Dev hosted zone
+ - prod_A_record_name: Domain name associated with prod/Demo hosted zone
+
 ## Providers
 The code uses the aws provider to interact with the AWS services. The provider takes the following input variables:
 
