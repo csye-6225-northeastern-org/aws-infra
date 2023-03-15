@@ -1,11 +1,27 @@
-variable "db_username" {
-  type    = string
-  default = "csye6225"
-}
-
-variable "db_password" {
+variable "engine" {
   type    = string
   default = "postgres"
+}
+variable "engine_version" {
+  type    = string
+  default = "14"
+}
+variable "instance_class" {
+  type    = string
+  default = "db.t3.micro"
+}
+
+variable "identifier" {
+  type = string
+}
+variable "db_name" {
+  type = string
+}
+variable "username" {
+  type = string
+}
+variable "password" {
+  type = string
 }
 
 # Create a DB security group
@@ -66,13 +82,13 @@ resource "aws_db_subnet_group" "private_db_subnet_group" {
 
 resource "aws_db_instance" "rds_instance" {
   allocated_storage    = 10
-  engine               = "postgres"
-  engine_version       = "14"
-  instance_class       = "db.t3.micro"
-  identifier           = "csye6225"
-  db_name              = "csye6225"
-  username             = "csye6225"
-  password             = "postgres"
+  engine               = var.engine
+  engine_version       = var.engine_version
+  instance_class       = var.instance_class
+  identifier           = var.identifier
+  db_name              = var.db_name
+  username             = var.username
+  password             = var.password
   parameter_group_name = aws_db_parameter_group.db_parameter_group.name
   publicly_accessible  = false
   skip_final_snapshot  = true
