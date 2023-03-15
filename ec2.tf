@@ -17,15 +17,29 @@ variable "ami_pattern" {
   type = string
 }
 
-variable "db_username" {
+variable "volume_type" {
   type    = string
-  default = "csye6225"
+  default = "gp2"
 }
 
-variable "db_password" {
-  type    = string
-  default = "postgres"
+variable "volume_size" {
+  default = 50
 }
+
+variable "NODE_ENV" {
+  type = string
+  default = "development"
+}
+
+variable "PORT"{
+  default = 3000
+}
+
+variable "DIALECT" {
+  type = string
+  default = "postgresql"
+}
+
 
 data "aws_ami" "webapp_ami" {
   most_recent = true
@@ -95,23 +109,6 @@ resource "aws_security_group" "app_security_group" {
   }
 }
 
-
-
-# resource "aws_instance" "ec2" {
-#   ami                    = data.aws_ami.webapp_ami.id
-#   instance_type          = var.ec2_class
-#   key_name               = var.key_pair
-#   subnet_id              = aws_subnet.public_subnet[0].id
-#   vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
-#   root_block_device {
-#     volume_type           = "gp2"
-#     volume_size           = 50
-#     delete_on_termination = true
-#   }
-#   disable_api_termination = false
-# }
-
-
 resource "aws_instance" "ec2" {
   depends_on    = [aws_db_instance.rds_instance, aws_s3_bucket.private_bucket]
   ami           = data.aws_ami.webapp_ami.id
@@ -128,9 +125,9 @@ Description=Webapp Service
 After=network.target
 
 [Service]
-Environment="NODE_ENV=development"
-Environment="PORT=3000"
-Environment="DIALECT=postgresql"
+Environment="NODE_ENV=${var.NODE_ENV}"
+Environment="PORT=${var.PORT}"
+Environment="DIALECT=${var.DIALECT}"
 Environment="HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
 Environment="USERNAME=${aws_db_instance.rds_instance.username}"
 Environment="PASSWORD=${aws_db_instance.rds_instance.password}"
@@ -154,9 +151,9 @@ sudo systemctl enable webapp.service
 sudo systemctl status webapp.service
 journalctl -u webapp.service
 
-echo 'export NODE_ENV=development' >> /home/ec2-user/.bashrc,
-echo 'export PORT=3000' >> /home/ec2-user/.bashrc,
-echo 'export DIALECT=postgres' >> /home/ec2-user/.bashrc,
+echo 'export NODE_ENV=${var.NODE_ENV}' >> /home/ec2-user/.bashrc,
+echo 'export PORT=${var.PORT}' >> /home/ec2-user/.bashrc,
+echo 'export DIALECT=${var.DIALECT}' >> /home/ec2-user/.bashrc,
 echo 'export HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}' >> /home/ec2-user/.bashrc,
 echo 'export USERNAME=${aws_db_instance.rds_instance.username}' >> /home/ec2-user/.bashrc,
 echo 'export PASSWORD=${aws_db_instance.rds_instance.password}' >> /home/ec2-user/.bashrc,
@@ -168,8 +165,8 @@ EOT
 
   vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
   root_block_device {
-    volume_type           = "gp2"
-    volume_size           = 50
+    volume_type           = var.volume_type
+    volume_size           = var.volume_size
     delete_on_termination = true
   }
   disable_api_termination = false
@@ -179,6 +176,7 @@ EOT
 
 }
 
+# Outputting if the RDS username and host that were created 
 output "RDS_USERNAME" {
   value = "${aws_instance.ec2.public_ip}:${aws_db_instance.rds_instance.username}"
 }
