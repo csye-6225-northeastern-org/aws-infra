@@ -18,6 +18,6 @@ resource "aws_route53_record" "nithinbharadwaj_A_record" {
   zone_id = var.profile == "dev" ? var.dev_hostedzone_id : var.prod_hostedzone_id
   name    = var.profile == "dev" ? var.dev_A_record_name : var.prod_A_record_name
   type    = "A"
-  ttl     = 300
+  ttl     = 60
   records = [aws_eip.eip.public_ip]
 }

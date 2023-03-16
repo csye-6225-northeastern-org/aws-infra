@@ -116,6 +116,7 @@ resource "aws_instance" "ec2" {
   key_name      = var.key_pair
   subnet_id     = aws_subnet.public_subnet[0].id
 
+
   #Sending User Data to EC2
   user_data = <<EOT
 #!/bin/bash
@@ -151,16 +152,23 @@ sudo systemctl enable webapp.service
 sudo systemctl status webapp.service
 journalctl -u webapp.service
 
-echo 'export NODE_ENV=${var.NODE_ENV}' >> /home/ec2-user/.bashrc,
-echo 'export PORT=${var.PORT}' >> /home/ec2-user/.bashrc,
-echo 'export DIALECT=${var.DIALECT}' >> /home/ec2-user/.bashrc,
-echo 'export HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}' >> /home/ec2-user/.bashrc,
-echo 'export USERNAME=${aws_db_instance.rds_instance.username}' >> /home/ec2-user/.bashrc,
-echo 'export PASSWORD=${aws_db_instance.rds_instance.password}' >> /home/ec2-user/.bashrc,
-echo 'export DB_NAME=${aws_db_instance.rds_instance.db_name}' >> /home/ec2-user/.bashrc,
-echo 'export S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.bucket}' >> /home/ec2-user/.bashrc,
-echo 'export REGION=${var.region}' >> /home/ec2-user/.bashrc,
-source /home/ec2-user/.bashrc
+# Setting up ngnix
+sudo yum update -y
+sudo amazon-linux-extras install nginx1 -y
+cat <<EOF > /etc/nginx/conf.d/reverse-proxy.conf
+server { 
+  listen 80; 
+  server_name dev.nithinbharadwaj.me; 
+  location / { 
+    proxy_pass http://localhost:3000;
+  }
+}
+EOF
+# sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
+sudo systemctl reload nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
 EOT
 
   vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
