@@ -15,20 +15,6 @@ resource "aws_s3_bucket" "private_bucket" {
     prevent_destroy = false
   }
 
-  # Add a lifecycle policy to transition objects to STANDARD_IA storage class after 30 days
-  # policy = jsonencode({
-  #   rules = [{
-  #     status = "Enabled"
-  #     transitions = [{
-  #       days          = 30
-  #       storage_class = "STANDARD_IA"
-  #     }]
-  #     filter = {
-  #       prefix = ""
-  #     }
-  #   }]
-  # })
-
   tags = {
     Name = "csye6225-${lower(var.profile)}-private-bucket"
   }
