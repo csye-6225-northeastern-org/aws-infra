@@ -152,19 +152,26 @@ sudo systemctl enable webapp.service
 sudo systemctl status webapp.service
 journalctl -u webapp.service
 
-# Setting up ngnix
+# Setting up ngnix for reverse-proxy
 sudo yum update -y
 sudo amazon-linux-extras install nginx1 -y
+
+ENVIRONMENT=${var.profile}
+if [ "$ENVIRONMENT" == "dev" ]; then
+  server_name="${var.dev_A_record_name}"
+else
+  server_name="${var.prod_A_record_name}"
+fi
+
 cat <<EOF > /etc/nginx/conf.d/reverse-proxy.conf
 server { 
   listen 80; 
-  server_name dev.nithinbharadwaj.me; 
+  server_name $server_name; 
   location / { 
     proxy_pass http://localhost:3000;
   }
 }
 EOF
-# sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
 sudo systemctl reload nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
