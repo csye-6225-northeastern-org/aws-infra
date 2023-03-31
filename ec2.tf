@@ -141,6 +141,7 @@ User=ec2-user
 WorkingDirectory=/home/ec2-user/webapp
 ExecStart=/usr/bin/node server.js
 Restart=on-failure
+SyslogIdentifier=webapp
 
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/webapp.service
@@ -175,6 +176,9 @@ EOF
 sudo systemctl reload nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
+
+# Configure CloudWatch agent
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/tmp/config.json
 
 EOT
 
