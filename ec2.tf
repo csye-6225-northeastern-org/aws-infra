@@ -114,91 +114,91 @@ resource "aws_security_group" "app_security_group" {
   }
 }
 
-resource "aws_instance" "ec2" {
-  depends_on    = [aws_db_instance.rds_instance, aws_s3_bucket.private_bucket]
-  ami           = data.aws_ami.webapp_ami.id
-  instance_type = var.ec2_class
-  key_name      = var.key_pair
-  subnet_id     = aws_subnet.public_subnet[0].id
+# resource "aws_instance" "ec2" {
+#   depends_on    = [aws_db_instance.rds_instance, aws_s3_bucket.private_bucket]
+#   ami           = data.aws_ami.webapp_ami.id
+#   instance_type = var.ec2_class
+#   key_name      = var.key_pair
+#   subnet_id     = aws_subnet.public_subnet[0].id
 
-  user_data = local.user_data
-  #Sending User Data to EC2
-  #   user_data = <<EOT
-  # #!/bin/bash
-  # cat <<EOF > /etc/systemd/system/webapp.service
-  # [Unit]
-  # Description=Webapp Service
-  # After=network.target
+#   user_data = local.user_data
+#   #Sending User Data to EC2
+#   #   user_data = <<EOT
+#   # #!/bin/bash
+#   # cat <<EOF > /etc/systemd/system/webapp.service
+#   # [Unit]
+#   # Description=Webapp Service
+#   # After=network.target
 
-  # [Service]
-  # Environment="NODE_ENV=${var.NODE_ENV}"
-  # Environment="PORT=${var.PORT}"
-  # Environment="DIALECT=${var.DIALECT}"
-  # Environment="HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
-  # Environment="USERNAME=${aws_db_instance.rds_instance.username}"
-  # Environment="PASSWORD=${aws_db_instance.rds_instance.password}"
-  # Environment="DB_NAME=${aws_db_instance.rds_instance.db_name}"
-  # Environment="S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.bucket}"
-  # Environment="REGION=${var.region}"
+#   # [Service]
+#   # Environment="NODE_ENV=${var.NODE_ENV}"
+#   # Environment="PORT=${var.PORT}"
+#   # Environment="DIALECT=${var.DIALECT}"
+#   # Environment="HOST=${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
+#   # Environment="USERNAME=${aws_db_instance.rds_instance.username}"
+#   # Environment="PASSWORD=${aws_db_instance.rds_instance.password}"
+#   # Environment="DB_NAME=${aws_db_instance.rds_instance.db_name}"
+#   # Environment="S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.bucket}"
+#   # Environment="REGION=${var.region}"
 
-  # Type=simple
-  # User=ec2-user
-  # WorkingDirectory=/home/ec2-user/webapp
-  # ExecStart=/usr/bin/node server.js
-  # Restart=on-failure
-  # SyslogIdentifier=webapp
+#   # Type=simple
+#   # User=ec2-user
+#   # WorkingDirectory=/home/ec2-user/webapp
+#   # ExecStart=/usr/bin/node server.js
+#   # Restart=on-failure
+#   # SyslogIdentifier=webapp
 
-  # [Install]
-  # WantedBy=multi-user.target" > /etc/systemd/system/webapp.service
-  # EOF
+#   # [Install]
+#   # WantedBy=multi-user.target" > /etc/systemd/system/webapp.service
+#   # EOF
 
-  # sudo systemctl daemon-reload
-  # sudo systemctl start webapp.service
-  # sudo systemctl enable webapp.service
-  # sudo systemctl status webapp.service
-  # journalctl -u webapp.service
+#   # sudo systemctl daemon-reload
+#   # sudo systemctl start webapp.service
+#   # sudo systemctl enable webapp.service
+#   # sudo systemctl status webapp.service
+#   # journalctl -u webapp.service
 
-  # # Setting up ngnix for reverse-proxy
-  # sudo yum update -y
-  # sudo amazon-linux-extras install nginx1 -y
+#   # # Setting up ngnix for reverse-proxy
+#   # sudo yum update -y
+#   # sudo amazon-linux-extras install nginx1 -y
 
-  # ENVIRONMENT=${var.profile}
-  # if [ "$ENVIRONMENT" == "dev" ]; then
-  #   server_name="${var.dev_A_record_name}"
-  # else
-  #   server_name="${var.prod_A_record_name}"
-  # fi
+#   # ENVIRONMENT=${var.profile}
+#   # if [ "$ENVIRONMENT" == "dev" ]; then
+#   #   server_name="${var.dev_A_record_name}"
+#   # else
+#   #   server_name="${var.prod_A_record_name}"
+#   # fi
 
-  # cat <<EOF > /etc/nginx/conf.d/reverse-proxy.conf
-  # server { 
-  #   listen 80; 
-  #   server_name $server_name; 
-  #   location / { 
-  #     proxy_pass http://localhost:3000;
-  #   }
-  # }
-  # EOF
-  # sudo systemctl reload nginx
-  # sudo systemctl start nginx
-  # sudo systemctl enable nginx
+#   # cat <<EOF > /etc/nginx/conf.d/reverse-proxy.conf
+#   # server { 
+#   #   listen 80; 
+#   #   server_name $server_name; 
+#   #   location / { 
+#   #     proxy_pass http://localhost:3000;
+#   #   }
+#   # }
+#   # EOF
+#   # sudo systemctl reload nginx
+#   # sudo systemctl start nginx
+#   # sudo systemctl enable nginx
 
-  # # Configure CloudWatch agent
-  # sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/tmp/config.json
+#   # # Configure CloudWatch agent
+#   # sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/tmp/config.json
 
-  # EOT
+#   # EOT
 
-  vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
-  root_block_device {
-    volume_type           = var.volume_type
-    volume_size           = var.volume_size
-    delete_on_termination = true
-  }
-  disable_api_termination = false
+#   vpc_security_group_ids = ["${aws_security_group.app_security_group.id}"]
+#   root_block_device {
+#     volume_type           = var.volume_type
+#     volume_size           = var.volume_size
+#     delete_on_termination = true
+#   }
+#   disable_api_termination = false
 
-  # Attach EC2 role to instance
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+#   # Attach EC2 role to instance
+#   iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
 
-}
+# }
 
 
 locals {

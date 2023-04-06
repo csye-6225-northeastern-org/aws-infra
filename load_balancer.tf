@@ -60,8 +60,8 @@ resource "aws_lb_target_group" "load_balancer_target_group" {
   vpc_id   = aws_vpc.a3_vpc.id
 }
 
-resource "aws_lb_target_group_attachment" "load_balancer_group_attachment" {
-  target_group_arn = aws_lb_target_group.load_balancer_target_group.arn
-  target_id        = aws_instance.ec2.id
-  port             = 3000
-}
+# resource "aws_lb_target_group_attachment" "load_balancer_group_attachment" {
+#   target_group_arn = aws_lb_target_group.load_balancer_target_group.arn
+#   target_id        = aws_instance.ec2.id
+#   port             = 3000
+# }
