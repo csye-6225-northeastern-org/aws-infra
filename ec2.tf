@@ -67,12 +67,12 @@ resource "aws_security_group" "app_security_group" {
   depends_on  = [aws_security_group.load_balancer]
 
   # Add ingress rules to allow traffic on ports 22, 80, 443, and 3081
-  # ingress {
-  #   from_port   = 22
-  #   to_port     = 22
-  #   protocol    = "tcp"
-  #   cidr_blocks = [var.destination_cidr_block]
-  # }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.destination_cidr_block]
+  }
 
   # ingress {
   #   from_port   = 80
@@ -220,10 +220,9 @@ locals {
 
 # Outputting if the RDS username and host that were created 
 output "RDS_USERNAME" {
-  value = "${aws_instance.ec2.public_ip}:${aws_db_instance.rds_instance.username}"
+  value = "${aws_lb.webapp_load_balancer.dns_name}:${aws_db_instance.rds_instance.username}"
 }
 
 output "HOST" {
-  value = "${aws_instance.ec2.public_ip}:${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
+  value = "${aws_lb.webapp_load_balancer.dns_name}:${element(split(":", aws_db_instance.rds_instance.endpoint), 0)}"
 }
-

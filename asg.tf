@@ -1,37 +1,36 @@
-resource "aws_launch_template" "lt" {
-  name_prefix            = "webapp-lt-"
-  image_id               = data.aws_ami.webapp_ami.id
-  instance_type          = var.ec2_class
-  key_name               = var.key_pair
-  user_data              = base64encode(local.user_data)
-  vpc_security_group_ids = [aws_security_group.app_security_group.id]
-
-  iam_instance_profile {
-    name = aws_iam_instance_profile.ec2_instance_profile.name
-  }
-  # network_interfaces {
-  #   associate_public_ip_address = true
-  #   security_groups             = [aws_security_group.app_security_group.id]
-  # }
+resource "aws_launch_configuration" "asg_launch_config" {
+  name_prefix                 = "webapp-asg-"
+  image_id                    = data.aws_ami.webapp_ami.id
+  instance_type               = var.ec2_class
+  key_name                    = var.key_pair
+  user_data                   = base64encode(local.user_data)
+  security_groups             = [aws_security_group.app_security_group.id]
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
 
   lifecycle {
     create_before_destroy = true
   }
+
+  root_block_device {
+    volume_size           = 50
+    volume_type           = "gp2"
+    delete_on_termination = true
+  }
 }
 
 resource "aws_autoscaling_group" "asg" {
-  launch_template {
-    id      = aws_launch_template.lt.id
-    version = aws_launch_template.lt.latest_version
-  }
+  name                 = "web_app_asg"
+  launch_configuration = aws_launch_configuration.asg_launch_config.id
 
   min_size         = 1
   max_size         = 3
   desired_capacity = 1
 
-  vpc_zone_identifier = [for subnet in aws_subnet.public_subnet : subnet.id]
+  vpc_zone_identifier = [for subnet in aws_subnet.private_subnet : subnet.id]
 
-  default_cooldown = 60
+  default_cooldown  = 60
+  target_group_arns = [aws_lb_target_group.load_balancer_target_group.arn]
   tags = [
     {
       key                 = "csye6225"
@@ -41,125 +40,59 @@ resource "aws_autoscaling_group" "asg" {
   ]
 }
 
-resource "aws_appautoscaling_target" "asg_target" {
-  max_capacity       = 3
-  min_capacity       = 1
-  resource_id        = "autoScalingGroupName/${aws_autoscaling_group.asg.name}"
-  scalable_dimension = "autoscaling:autoScalingGroup:DesiredCapacity"
-  service_namespace  = "autoscaling"
+resource "aws_autoscaling_policy" "scale_up" {
+  name                    = "scale-up"
+  autoscaling_group_name  = aws_autoscaling_group.asg.name
+  adjustment_type         = "ChangeInCapacity"
+  scaling_adjustment      = 1
+  cooldown                = 60
+  policy_type             = "SimpleScaling"
+  metric_aggregation_type = "Average"
 }
 
+resource "aws_autoscaling_policy" "scale_down" {
+  name                    = "scale-down"
+  autoscaling_group_name  = aws_autoscaling_group.asg.name
+  adjustment_type         = "ChangeInCapacity"
+  scaling_adjustment      = -1
+  cooldown                = 60
+  policy_type             = "SimpleScaling"
+  metric_aggregation_type = "Average"
+}
 
-resource "aws_appautoscaling_policy" "scale_up_policy" {
-  name               = "scale-up"
-  policy_type        = "StepScaling"
-  resource_id        = aws_appautoscaling_target.asg_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.asg_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.asg_target.service_namespace
-
-  step_scaling_policy_configuration {
-    adjustment_type         = "ChangeInCapacity"
-    cooldown                = 60
-    metric_aggregation_type = "Average"
-
-    step_adjustment {
-      scaling_adjustment          = 1
-      metric_interval_lower_bound = 0.0
-      metric_interval_upper_bound = 5.0
-    }
+resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
+  alarm_name          = "scale-up-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "30"
+  statistic           = "Average"
+  threshold           = "5"
+  alarm_description   = "This metric checks if the CPU usage is above 5%"
+  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
+  actions_enabled     = true
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.asg.name
   }
 }
 
-resource "aws_appautoscaling_policy" "scale_down_policy" {
-  name               = "scale-down"
-  policy_type        = "StepScaling"
-  resource_id        = aws_appautoscaling_target.asg_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.asg_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.asg_target.service_namespace
-
-  step_scaling_policy_configuration {
-    adjustment_type         = "ChangeInCapacity"
-    cooldown                = 60
-    metric_aggregation_type = "Average"
-
-    step_adjustment {
-      scaling_adjustment          = -1
-      metric_interval_lower_bound = 3.0
-      metric_interval_upper_bound = 0.0
-    }
+resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
+  alarm_name          = "scale-down-alarm"
+  comparison_operator = "LessThanOrEqualToThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "60"
+  statistic           = "SampleCount"
+  threshold           = "3"
+  alarm_description   = "This metric checks if the CPU usage is below 3%"
+  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
+  actions_enabled     = true
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.asg.name
   }
 }
-
-# # Launch Configuration
-# resource "aws_launch_configuration" "asg_launch_config" {
-#   name_prefix                 = "asg_launch_config"
-#   image_id                    = data.aws_ami.webapp_ami.id
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = true
-#   user_data                   = local.user_data
-#   security_groups             = [aws_security_group.app_security_group.id]
-#   iam_instance_profile        = "csye6225-webapp"
-
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
-
-# # Auto Scaling Group
-# resource "aws_autoscaling_group" "webapp_asg" {
-#   launch_configuration = aws_launch_configuration.asg_launch_config.id
-#   min_size             = 1
-#   max_size             = 3
-#   desired_capacity     = 1
-#   cooldown             = 60
-#   vpc_zone_identifier  = [for subnet in aws_subnet.public_subnet : subnet.id]
-
-#   tag {
-#     key                 = "Name"
-#     value               = "webapp-instance"
-#     propagate_at_launch = true
-#   }
-# }
-
-# # AutoScaling Policies
-# resource "aws_autoscaling_policy" "scale_up" {
-#   name                   = "scale_up"
-#   scaling_adjustment     = 1
-#   adjustment_type        = "ChangeInCapacity"
-#   cooldown               = 60
-#   autoscaling_group_name = aws_autoscaling_group.webapp_asg.id
-
-#   alarm_settings {
-#     alarm_name          = "scale_up_alarm"
-#     comparison_operator = "GreaterThanOrEqualToThreshold"
-#     evaluation_periods  = "1"
-#     metric_name         = "CPUUtilization"
-#     namespace           = "AWS/EC2"
-#     period              = "60"
-#     statistic           = "SampleCount"
-#     threshold           = "5"
-#   }
-# }
-
-
-# resource "aws_autoscaling_policy" "scale_down" {
-#   name                   = "scale_down"
-#   scaling_adjustment     = -1
-#   adjustment_type        = "ChangeInCapacity"
-#   cooldown               = 60
-#   autoscaling_group_name = aws_autoscaling_group.webapp_asg.id
-
-#   alarm_settings {
-#     alarm_name          = "scale_down_alarm"
-#     comparison_operator = "LessThanOrEqualToThreshold"
-#     evaluation_periods  = "1"
-#     metric_name         = "CPUUtilization"
-#     namespace           = "AWS/EC2"
-#     period              = "60"
-#     statistic           = "SampleCount"
-#     threshold           = "3"
-#   }
-# }
 
 # resource "aws_autoscaling_attachment" "webapp_asg_attachment" {
 #   autoscaling_group_name = aws_autoscaling_group.webapp_asg.id
