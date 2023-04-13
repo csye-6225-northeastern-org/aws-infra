@@ -1,5 +1,5 @@
 resource "aws_launch_template" "asg_launch_template" {
-  name_prefix   = "webapp-asg-"
+  name          = "webapp-launch-template"
   image_id      = data.aws_ami.webapp_ami.id
   instance_type = var.ec2_class
   key_name      = var.key_pair
@@ -10,6 +10,12 @@ resource "aws_launch_template" "asg_launch_template" {
   network_interfaces {
     associate_public_ip_address = true
     security_groups             = [aws_security_group.app_security_group.id]
+  }
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "webapp-instance"
+    }
   }
 
   block_device_mappings {
@@ -24,9 +30,6 @@ resource "aws_launch_template" "asg_launch_template" {
     }
   }
 
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "aws_autoscaling_group" "asg" {
@@ -41,16 +44,14 @@ resource "aws_autoscaling_group" "asg" {
   desired_capacity = 1
 
   vpc_zone_identifier = [for subnet in aws_subnet.private_subnet : subnet.id]
+  health_check_type   = "EC2"
 
   default_cooldown  = 60
   target_group_arns = [aws_lb_target_group.load_balancer_target_group.arn]
-  tags = [
-    {
-      key                 = "csye6225"
-      value               = "webapp-asg-instance"
-      propagate_at_launch = true
-    }
-  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_autoscaling_policy" "scale_up" {
