@@ -92,6 +92,9 @@ resource "aws_db_instance" "rds_instance" {
   parameter_group_name = aws_db_parameter_group.db_parameter_group.name
   publicly_accessible  = false
   skip_final_snapshot  = true
+  storage_encrypted    = true
+  kms_key_id           = aws_kms_key.rds_key.arn
+
 
   # Attach database security group to the instance
   vpc_security_group_ids = [aws_security_group.db_security_group.id]
