@@ -66,11 +66,6 @@ resource "aws_iam_policy" "webapp_s3_policy" {
   )
 }
 
-resource "aws_iam_role_policy_attachment" "webapp_s3_policy_attachment" {
-  policy_arn = aws_iam_policy.webapp_s3_policy.arn
-  role       = aws_iam_role.ec2_role.name
-}
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "private_bucket" {
   bucket = aws_s3_bucket.private_bucket.id
 
