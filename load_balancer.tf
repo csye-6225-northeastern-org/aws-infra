@@ -3,12 +3,12 @@ resource "aws_security_group" "load_balancer" {
   description = "Security group for load balancer to access the web application"
   vpc_id      = aws_vpc.a3_vpc.id
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.destination_cidr_block]
-  }
+  # ingress {
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   cidr_blocks = [var.destination_cidr_block]
+  # }
 
   ingress {
     from_port   = 443
@@ -44,8 +44,10 @@ resource "aws_lb" "webapp_load_balancer" {
 
 resource "aws_lb_listener" "load_balancer_listener" {
   load_balancer_arn = aws_lb.webapp_load_balancer.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = data.aws_acm_certificate.my_cert.arn
 
   default_action {
     type             = "forward"
