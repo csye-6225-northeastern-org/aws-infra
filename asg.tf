@@ -61,7 +61,7 @@ resource "aws_autoscaling_policy" "scale_up" {
   scaling_adjustment      = 1
   cooldown                = 60
   policy_type             = "SimpleScaling"
-  metric_aggregation_type = "Average"
+  metric_aggregation_type = "SampleCount"
 }
 
 resource "aws_autoscaling_policy" "scale_down" {
@@ -71,17 +71,17 @@ resource "aws_autoscaling_policy" "scale_down" {
   scaling_adjustment      = -1
   cooldown                = 60
   policy_type             = "SimpleScaling"
-  metric_aggregation_type = "Average"
+  metric_aggregation_type = "SampleCount"
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   alarm_name          = "scale-up-alarm"
   comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2"
+  evaluation_periods  = "1"
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
   period              = "30"
-  statistic           = "Average"
+  statistic           = "SampleCount"
   threshold           = "5"
   alarm_description   = "This metric checks if the CPU usage is above 5%"
   alarm_actions       = ["${aws_autoscaling_policy.scale_up.arn}"]
@@ -97,7 +97,7 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   evaluation_periods  = "1"
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = "60"
+  period              = "30"
   statistic           = "SampleCount"
   threshold           = "3"
   alarm_description   = "This metric checks if the CPU usage is below 3%"
