@@ -25,8 +25,8 @@ resource "aws_launch_template" "asg_launch_template" {
       volume_size           = 50
       volume_type           = "gp2"
       delete_on_termination = true
-      encrypted             = true
-      kms_key_id            = aws_kms_key.ebs_key.arn
+      # encrypted             = true
+      # kms_key_id            = aws_kms_key.ebs_key.arn
     }
   }
 
@@ -84,10 +84,10 @@ resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   statistic           = "Average"
   threshold           = "5"
   alarm_description   = "This metric checks if the CPU usage is above 5%"
-  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
+  alarm_actions       = ["${aws_autoscaling_policy.scale_up.arn}"]
   actions_enabled     = true
   dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.asg.name
+    "AutoScalingGroupName" = "${aws_autoscaling_group.asg.name}"
   }
 }
 
@@ -101,10 +101,10 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   statistic           = "SampleCount"
   threshold           = "3"
   alarm_description   = "This metric checks if the CPU usage is below 3%"
-  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
+  alarm_actions       = ["${aws_autoscaling_policy.scale_down.arn}"]
   actions_enabled     = true
   dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.asg.name
+    AutoScalingGroupName = "${aws_autoscaling_group.asg.name}"
   }
 }
 
