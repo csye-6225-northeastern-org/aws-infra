@@ -16,7 +16,7 @@ resource "aws_iam_role" "ec2_role" {
 
   # Attach WebAppS3 policy to EC2 role
   depends_on = [
-    aws_iam_policy.webapp_s3_policy
+    aws_iam_policy.webapp_s3_policy, aws_iam_policy.WebAppCloudWatch
   ]
 
   tags = {

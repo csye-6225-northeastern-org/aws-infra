@@ -111,8 +111,3 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   }
 }
 
-# resource "aws_autoscaling_attachment" "webapp_asg_attachment" {
-#   autoscaling_group_name = aws_autoscaling_group.webapp_asg.id
-#   alb_target_group_arn   = aws_lb_target_group.load_balancer_target_group.arn
-# }
-
