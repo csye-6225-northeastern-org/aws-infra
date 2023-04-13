@@ -1,28 +1,41 @@
-resource "aws_launch_configuration" "asg_launch_config" {
-  name_prefix                 = "webapp-asg-"
-  image_id                    = data.aws_ami.webapp_ami.id
-  instance_type               = var.ec2_class
-  key_name                    = var.key_pair
-  user_data                   = base64encode(local.user_data)
-  security_groups             = [aws_security_group.app_security_group.id]
-  associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
+resource "aws_launch_template" "asg_launch_template" {
+  name_prefix   = "webapp-asg-"
+  image_id      = data.aws_ami.webapp_ami.id
+  instance_type = var.ec2_class
+  key_name      = var.key_pair
+  user_data     = base64encode(local.user_data)
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_instance_profile.name
+  }
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [aws_security_group.app_security_group.id]
+  }
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      volume_size           = 50
+      volume_type           = "gp2"
+      delete_on_termination = true
+      encrypted             = true
+      kms_key_id            = aws_kms_key.ebs_key.arn
+    }
+  }
 
   lifecycle {
     create_before_destroy = true
   }
-
-  root_block_device {
-    volume_size           = 50
-    volume_type           = "gp2"
-    delete_on_termination = true
-  }
 }
 
 resource "aws_autoscaling_group" "asg" {
-  name                 = "web_app_asg"
-  launch_configuration = aws_launch_configuration.asg_launch_config.id
-
+  name = "web_app_asg"
+  # launch_configuration = aws_launch_configuration.asg_launch_config.id
+  launch_template {
+    id      = aws_launch_template.asg_launch_template.id
+    version = "$Latest"
+  }
   min_size         = 1
   max_size         = 3
   desired_capacity = 1

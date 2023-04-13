@@ -58,6 +58,15 @@ resource "aws_lb_target_group" "load_balancer_target_group" {
   port     = 3000
   protocol = "HTTP"
   vpc_id   = aws_vpc.a3_vpc.id
+  health_check {
+    path                = "/healthz"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    matcher             = "200"
+  }
 }
 
 # resource "aws_lb_target_group_attachment" "load_balancer_group_attachment" {
