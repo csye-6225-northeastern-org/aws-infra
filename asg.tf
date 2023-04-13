@@ -1,14 +1,18 @@
 resource "aws_launch_template" "asg_launch_template" {
-  name          = "webapp-launch-template"
-  image_id      = data.aws_ami.webapp_ami.id
-  instance_type = var.ec2_class
-  key_name      = var.key_pair
-  user_data     = base64encode(local.user_data)
+  name                    = "webapp-launch-template"
+  image_id                = data.aws_ami.webapp_ami.id
+  instance_type           = var.ec2_class
+  key_name                = var.key_pair
+  disable_api_termination = false
+  ebs_optimized           = false
+
+  user_data = base64encode(local.user_data)
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
   }
   network_interfaces {
     associate_public_ip_address = true
+    subnet_id                   = aws_subnet.public_subnet[0].id
     security_groups             = [aws_security_group.app_security_group.id]
   }
   tag_specifications {
@@ -45,46 +49,45 @@ resource "aws_autoscaling_group" "asg" {
 
   vpc_zone_identifier = [for subnet in aws_subnet.private_subnet : subnet.id]
   health_check_type   = "EC2"
-
-  default_cooldown  = 60
-  target_group_arns = [aws_lb_target_group.load_balancer_target_group.arn]
+  target_group_arns   = [aws_lb_target_group.load_balancer_target_group.arn]
 
   lifecycle {
     create_before_destroy = true
   }
 }
 
-resource "aws_autoscaling_policy" "scale_up" {
-  name                    = "scale-up"
-  autoscaling_group_name  = aws_autoscaling_group.asg.name
+resource "aws_autoscaling_policy" "scale_up_policy" {
+  name                    = "scale_up_policy"
+  policy_type             = "SimpleScaling"
   adjustment_type         = "ChangeInCapacity"
+  autoscaling_group_name  = aws_autoscaling_group.asg.name
   scaling_adjustment      = 1
   cooldown                = 60
-  policy_type             = "SimpleScaling"
-  metric_aggregation_type = "SampleCount"
+  metric_aggregation_type = "Average"
 }
 
-resource "aws_autoscaling_policy" "scale_down" {
-  name                    = "scale-down"
-  autoscaling_group_name  = aws_autoscaling_group.asg.name
+
+resource "aws_autoscaling_policy" "scale_down_policy" {
+  name                    = "scale_down_policy"
+  policy_type             = "SimpleScaling"
   adjustment_type         = "ChangeInCapacity"
+  autoscaling_group_name  = aws_autoscaling_group.asg.name
   scaling_adjustment      = -1
   cooldown                = 60
-  policy_type             = "SimpleScaling"
-  metric_aggregation_type = "SampleCount"
+  metric_aggregation_type = "Average"
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
-  alarm_name          = "scale-up-alarm"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
+  alarm_name          = "scale_up_alarm"
+  alarm_description   = "scaleupalarm"
   evaluation_periods  = "1"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = "30"
-  statistic           = "SampleCount"
+  period              = "60"
+  statistic           = "Average"
   threshold           = "5"
-  alarm_description   = "This metric checks if the CPU usage is above 5%"
-  alarm_actions       = ["${aws_autoscaling_policy.scale_up.arn}"]
+  alarm_actions       = ["${aws_autoscaling_policy.scale_up_policy.arn}"]
   actions_enabled     = true
   dimensions = {
     "AutoScalingGroupName" = "${aws_autoscaling_group.asg.name}"
@@ -92,16 +95,16 @@ resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
-  alarm_name          = "scale-down-alarm"
-  comparison_operator = "LessThanOrEqualToThreshold"
+  alarm_name          = "scale_down_alarm"
+  alarm_description   = "scaledownalarm"
   evaluation_periods  = "1"
+  comparison_operator = "LessThanOrEqualToThreshold"
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = "30"
-  statistic           = "SampleCount"
+  period              = "60"
+  statistic           = "Average"
   threshold           = "3"
-  alarm_description   = "This metric checks if the CPU usage is below 3%"
-  alarm_actions       = ["${aws_autoscaling_policy.scale_down.arn}"]
+  alarm_actions       = ["${aws_autoscaling_policy.scale_down_policy.arn}"]
   actions_enabled     = true
   dimensions = {
     AutoScalingGroupName = "${aws_autoscaling_group.asg.name}"
