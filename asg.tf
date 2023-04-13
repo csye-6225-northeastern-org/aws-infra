@@ -5,23 +5,6 @@ resource "aws_launch_template" "asg_launch_template" {
   key_name                = var.key_pair
   disable_api_termination = false
   ebs_optimized           = false
-
-  user_data = base64encode(local.user_data)
-  iam_instance_profile {
-    name = aws_iam_instance_profile.ec2_instance_profile.name
-  }
-  network_interfaces {
-    associate_public_ip_address = true
-    subnet_id                   = aws_subnet.public_subnet[0].id
-    security_groups             = [aws_security_group.app_security_group.id]
-  }
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
-      Name = "webapp-instance"
-    }
-  }
-
   block_device_mappings {
     device_name = "/dev/xvda"
 
@@ -29,11 +12,20 @@ resource "aws_launch_template" "asg_launch_template" {
       volume_size           = 50
       volume_type           = "gp2"
       delete_on_termination = true
-      # encrypted             = true
-      # kms_key_id            = aws_kms_key.ebs_key.arn
+      encrypted             = true
+      kms_key_id            = aws_kms_key.ebs_key.arn
     }
   }
+  network_interfaces {
+    associate_public_ip_address = true
+    subnet_id                   = aws_subnet.public_subnet[0].id
+    security_groups             = [aws_security_group.app_security_group.id]
+  }
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_instance_profile.name
+  }
 
+  user_data = base64encode(local.user_data)
 }
 
 resource "aws_autoscaling_group" "asg" {
