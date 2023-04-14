@@ -70,3 +70,35 @@ To use the code, the following steps can be followed:
 - Run the `terraform plan` command to get the blueprint of the resources being created.
 - Run the `terraform apply` command to apply the changes and create the resources in the AWS account.
   
+
+## Domain Name from NameCheap
+
+- NameCheap was used to acquire a domain with name nithinbharadwaj.me 
+- Route53 was updated accordingly for prod and dev accounts.
+- To access the prod use the URL : https://prod.nithinbharadwaj.me/ and for dev account use URL : https://dev.nithinbharadwaj.me
+
+## Cloudwatch Config
+
+- Create a cloudwatch config to upload the metrics every 5 minutes 
+- Installed cloudwatch agent and the application logs will be written to combined.log. Cloudwatch agent checks for any new logs and agent pushes to cloudwatch 
+- StasD was used to collection the metrics of number of times each endpoint is called
+- For existing ec2-role, an IAM policy is attached for uploading of logs to cloudwatch with necessary permissions
+
+## Load Balancer and Auto Scaling
+
+- aws_launch_template was used to define the properties of the instance and roles that needs to be given to a EC2 instance when the instance gets spawned using this template
+- Instead of directly hitting the instances, a Load balancer is placed infront to handle the request and assign the requests to process for the instances
+- Scale Up and Scale down alarms were set based on Scale Up and Down policies
+- Max number of machines that can be spawned is 3 and minimum is 1 
+- The metric used is Average CPU Utilization % over a minute. If there is a high usage, then the ASG will spawn new instances
+
+
+### Encrypting RDS, EBS Volume and Commands to import the certificate 
+
+ - Individual KMS keys are created and assigned to the resource so that the resource is encrypted
+ - Below is the command that is used to import the certificate to Amazon certificate manager
+   - `aws acm import-certificate --certificate fileb://prod_nithinbharadwaj_me.pem --certificate-chain fileb://prod_nithinbharadwaj_me_ca_bundle.pem --private-key fileb://private_key.key --profile demo --region us-east-2`
+   - In the above code, region and profile are mentioned so that the certificate is imported to the location, where the instances are up and running
+
+ - Only HTTPS requests are supported by load balancer
+ - User will not be able to connect to the EC2 instance because of ASG
