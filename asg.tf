@@ -29,7 +29,7 @@ resource "aws_launch_template" "asg_launch_template" {
 }
 
 resource "aws_autoscaling_group" "asg" {
-  name_prefix = "web_app_asg"
+  name = "web_app_asg"
   # launch_configuration = aws_launch_configuration.asg_launch_config.id
   launch_template {
     id      = aws_launch_template.asg_launch_template.id
