@@ -3,12 +3,12 @@ resource "aws_security_group" "load_balancer" {
   description = "Security group for load balancer to access the web application"
   vpc_id      = aws_vpc.a3_vpc.id
 
-  # ingress {
-  #   from_port   = 80
-  #   to_port     = 80
-  #   protocol    = "tcp"
-  #   cidr_blocks = [var.destination_cidr_block]
-  # }
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.destination_cidr_block]
+  }
 
   ingress {
     from_port   = 443
@@ -56,21 +56,22 @@ resource "aws_lb_listener" "load_balancer_listener" {
 }
 
 resource "aws_lb_target_group" "load_balancer_target_group" {
-  name     = "load-balancer-target-group"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.a3_vpc.id
+  name        = "load-balancer-target-group"
+  port        = 3000
+  protocol    = "HTTP"
+  target_type = "instance"
+  vpc_id      = aws_vpc.a3_vpc.id
   health_check {
-    path                = "/healthz"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-    matcher             = "200"
+    enabled           = true
+    healthy_threshold = 2
+    interval          = 60
+    path              = "/healthz"
+    port              = 3000
+    timeout           = 30
   }
 }
 
+# To run the code with EC2 instance uncomment the below code
 # resource "aws_lb_target_group_attachment" "load_balancer_group_attachment" {
 #   target_group_arn = aws_lb_target_group.load_balancer_target_group.arn
 #   target_id        = aws_instance.ec2.id
