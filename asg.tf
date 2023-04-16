@@ -18,8 +18,8 @@ resource "aws_launch_template" "asg_launch_template" {
   }
   network_interfaces {
     associate_public_ip_address = true
-    subnet_id                   = aws_subnet.public_subnet[0].id
-    security_groups             = [aws_security_group.app_security_group.id]
+    # subnet_id                   = aws_subnet.public[0].id
+    security_groups = [aws_security_group.app_security_group.id]
   }
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
@@ -29,23 +29,30 @@ resource "aws_launch_template" "asg_launch_template" {
 }
 
 resource "aws_autoscaling_group" "asg" {
-  name = "web_app_asg"
+  name_prefix = "web_app_asg"
   # launch_configuration = aws_launch_configuration.asg_launch_config.id
   launch_template {
     id      = aws_launch_template.asg_launch_template.id
     version = "$Latest"
   }
-  min_size         = 1
-  max_size         = 3
-  desired_capacity = 1
+  min_size            = 1
+  max_size            = 3
+  desired_capacity    = 1
+  vpc_zone_identifier = [for subnet in aws_subnet.public_subnet : subnet.id]
 
-  vpc_zone_identifier = [for subnet in aws_subnet.private_subnet : subnet.id]
-  health_check_type   = "EC2"
-  target_group_arns   = [aws_lb_target_group.load_balancer_target_group.arn]
+  health_check_type = "EC2"
+  target_group_arns = [aws_lb_target_group.load_balancer_target_group.arn]
 
   lifecycle {
     create_before_destroy = true
   }
+
+  tag {
+    key                 = "Name"
+    value               = "ASG instance"
+    propagate_at_launch = true
+  }
+
 }
 
 resource "aws_autoscaling_policy" "scale_up_policy" {
@@ -102,4 +109,6 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
     AutoScalingGroupName = "${aws_autoscaling_group.asg.name}"
   }
 }
+
+
 

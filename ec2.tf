@@ -64,7 +64,7 @@ resource "aws_security_group" "app_security_group" {
   name_prefix = "app-security-group"
   description = "Security group for EC2 instances hosting web applications."
   vpc_id      = aws_vpc.a3_vpc.id
-  depends_on  = [aws_security_group.load_balancer]
+  # depends_on  = [aws_security_group.load_balancer]
 
   # Add ingress rules to allow traffic on ports 22, 80, 443, and 3081
   ingress {

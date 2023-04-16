@@ -15,9 +15,9 @@ resource "aws_iam_role" "ec2_role" {
   })
 
   # Attach WebAppS3 policy to EC2 role
-  depends_on = [
-    aws_iam_policy.webapp_s3_policy, aws_iam_policy.WebAppCloudWatch
-  ]
+  # depends_on = [
+  #   aws_iam_policy.webapp_s3_policy, aws_iam_policy.WebAppCloudWatch
+  # ]
 
   tags = {
     Name = "EC2-CSYE6225"
@@ -30,41 +30,12 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 }
 
 # Create IAM policy for Cloudwatch
-resource "aws_iam_policy" "WebAppCloudWatch" {
-  name        = "WebAppCloudWatch"
-  description = "Allows EC2 instances to access CloudWatch"
-  policy = jsonencode(
-    {
-      "Version" : "2012-10-17",
-      "Statement" : [
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "cloudwatch:PutMetricData",
-            "ec2:DescribeTags",
-            "logs:PutLogEvents",
-            "logs:DescribeLogStreams",
-            "logs:DescribeLogGroups",
-            "logs:CreateLogStream",
-            "logs:CreateLogGroup"
-          ],
-          "Resource" : "*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ssm:GetParameter",
-            "ssm:PutParameter"
-          ],
-          "Resource" : "arn:aws:ssm:::parameter/AmazonCloudWatch-*"
-        }
-      ]
-    }
-  )
+data "aws_iam_policy" "WebAppCloudWatch" {
+  arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "cloudwatch_agent_policy_attachment" {
-  policy_arn = aws_iam_policy.WebAppCloudWatch.arn
+  policy_arn = data.aws_iam_policy.WebAppCloudWatch.arn
   role       = aws_iam_role.ec2_role.name
 }
 
@@ -72,3 +43,15 @@ resource "aws_iam_role_policy_attachment" "webapp_s3_policy_attachment" {
   policy_arn = aws_iam_policy.webapp_s3_policy.arn
   role       = aws_iam_role.ec2_role.name
 }
+
+resource "aws_iam_policy_attachment" "webapp_s3_policy_attachment" {
+  name       = "ec2-s3-iam-role-policy"
+  roles      = [aws_iam_role.ec2_role.name]
+  policy_arn = aws_iam_policy.webapp_s3_policy.arn
+}
+
+# resource "aws_iam_policy_attachment" "cloudwatch_agent_policy_attachment" {
+#   name       = "ec2-cloudwatch-iam-role-policy"
+#   roles      = [aws_iam_role.ec2_role.name]
+#   policy_arn = data.aws_iam_policy.WebAppCloudWatch.arn
+# }
